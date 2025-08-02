@@ -50,47 +50,92 @@
             height: 100%;
             background: black;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 10;
-            flex-direction: column;
         }
         #startButton {
-            padding: 15px 30px;
-            font-size: 20px;
-            background: yellow;
-            color: black;
-            border: none;
-            border-radius: 10px;
+            /* Круглая фиолетовая кнопка */
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: purple; /* Фиолетовый цвет */
+            color: white;
+            font-size: 18px;
+            border: 3px solid yellow; /* Желтая рамка для выделения */
             cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
+            margin: 20px 0; /* Отступы сверху и снизу от кнопки */
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.7); /* Желтая тень */
+            transition: background 0.3s, transform 0.2s;
         }
         #startButton:hover {
-             background: #ffcc00; /* Немного темнее желтого при наведении */
+            background: #9932cc; /* Темнее фиолетовый при наведении */
+            transform: scale(1.05); /* Немного увеличиваем при наведении */
         }
-        #startScreen h1 {
-            color: yellow;
-            font-family: Arial, sans-serif;
-            margin-bottom: 20px;
+        #startButton:active {
+             transform: scale(0.98); /* Немного уменьшаем при нажатии */
         }
-        #startScreen p {
-            color: white;
-            font-family: Arial, sans-serif;
-            margin-top: 20px;
-            text-align: center;
-            padding: 0 20px;
+        /* Контейнер для изображений персонажей */
+        .characters-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; /* Перенос на новую строку при необходимости */
+            gap: 20px; /* Расстояние между изображениями */
+            max-width: 90%;
+            margin-bottom: 20px; /* Отступ снизу от персонажей до кнопки */
         }
+        .character-img {
+            width: 50px;
+            height: 50px;
+            /* Если изображения не загрузятся, будет видно цветной кружок */
+            background-color: #333;
+            border-radius: 50%;
+        }
+        /* Стили для резервных кружков персонажей */
+        .pacman-char { background-color: yellow; }
+        .ghost-red-char { background-color: red; }
+        .ghost-cyan-char { background-color: cyan; }
+        .ghost-orange-char { background-color: orange; }
+        .dot-char { background-color: white; width: 20px; height: 20px; }
+        .energizer-char { background-color: white; width: 30px; height: 30px; }
         /* --- Конец стилей для стартового экрана --- */
     </style>
 </head>
 <body>
     <!-- --- Стартовый экран --- -->
     <div id="startScreen">
-        <h1>PACMAN</h1>
-        <button id="startButton">Включить звук и Играть</button>
-        <p>Нажмите кнопку выше, чтобы включить звук<br>и начать игру</p>
+        <!-- Контейнер для изображений персонажей -->
+        <div class="characters-container">
+            <img class="character-img pacman-char" src="mypacman.png" alt="Pacman" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="character-img pacman-char" style="display:none;"></div> <!-- Резервный кружок -->
+
+            <img class="character-img ghost-red-char" src="ghost_red.png" alt="Red Ghost" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="character-img ghost-red-char" style="display:none;"></div>
+
+            <img class="character-img ghost-cyan-char" src="ghost_cyan.png" alt="Cyan Ghost" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="character-img ghost-cyan-char" style="display:none;"></div>
+
+            <img class="character-img ghost-orange-char" src="ghost_orange.png" alt="Orange Ghost" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="character-img ghost-orange-char" style="display:none;"></div>
+
+            <img class="character-img dot-char" src="dot.png" alt="Dot" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="character-img dot-char" style="display:none;"></div>
+
+            <img class="character-img energizer-char" src="energizer.png" alt="Energizer" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="character-img energizer-char" style="display:none;"></div>
+        </div>
+
+        <button id="startButton">Начать</button>
     </div>
     <!-- --- Конец стартового экрана --- -->
-
     <canvas id="game"></canvas>
     <div id="controls">
         <div class="btn" id="up">↑</div><br>
@@ -101,153 +146,80 @@
     <script>
         // Настройки игры
         const canvas = document.getElementById('game');
-        const ctx = canvas.getContext('2d', { alpha: false }); // Отключаем альфа-канал для лучшей производительности
+        const ctx = canvas.getContext('2d');
         const tileSize = 20;
         const pacmanSpeed = 3;
         const ghostSpeed = 2;
-
-        // --- Инициализация Web Audio API ---
-        let audioContext;
+        // --- Инициализация всех аудио ---
+        const backgroundMusic = new Audio('background.mp3');
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.3;
+        const dotSound = new Audio('dot.mp3');
+        dotSound.volume = 0.5;
+        const energizerSound = new Audio('energizer.mp3');
+        energizerSound.volume = 0.7;
+        const eatGhostSound = new Audio('eat_ghost.mp3');
+        eatGhostSound.volume = 0.8;
+        const deathSound = new Audio('death.mp3');
+        deathSound.volume = 0.8;
+        // --- Конец инициализации аудио ---
+        // --- Функция для попытки начальной инициализации ВСЕХ звуков ---
         let audioUnlocked = false;
-        const soundBuffers = {}; // Хранилище для декодированных аудиобуферов
-
-        // --- Функция для инициализации AudioContext ---
-        async function initAudio() {
-            if (audioContext) return;
-            
-            try {
-                // Создаем AudioContext
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                console.log("AudioContext создан");
-                
-                // Загружаем и декодируем все аудиофайлы
-                const soundFiles = {
-                    'background': 'background.mp3',
-                    'dot': 'dot.mp3',
-                    'energizer': 'energizer.mp3',
-                    'eat_ghost': 'eat_ghost.mp3',
-                    'death': 'death.mp3'
-                };
-
-                const loadPromises = Object.keys(soundFiles).map(async (key) => {
-                    try {
-                        const response = await fetch(soundFiles[key]);
-                        const arrayBuffer = await response.arrayBuffer();
-                        soundBuffers[key] = await audioContext.decodeAudioData(arrayBuffer);
-                        console.log(`Звук ${key} загружен и декодирован`);
-                    } catch (error) {
-                        console.error(`Ошибка загрузки/декодирования звука ${key}:`, error);
-                    }
-                });
-
-                await Promise.all(loadPromises);
-                console.log("Все звуки загружены");
-                
-            } catch (error) {
-                console.error("Ошибка инициализации аудиосистемы:", error);
-                audioContext = null;
-            }
-        }
-
-        // --- Функция для воспроизведения звука через Web Audio API ---
-        function playSoundWebAudio(soundKey, volume = 1.0) {
-            if (!audioContext || !soundBuffers[soundKey] || !audioUnlocked) {
-                console.warn(`Невозможно воспроизвести звук ${soundKey}. Аудио не готово.`);
-                return;
-            }
-
-            try {
-                // Создаем новый AudioBufferSourceNode для каждого воспроизведения
-                const source = audioContext.createBufferSource();
-                source.buffer = soundBuffers[soundKey];
-                
-                // Создаем узел гейна для управления громкостью
-                const gainNode = audioContext.createGain();
-                gainNode.gain.value = volume;
-                
-                // Связываем узлы: источник -> гейн -> выход
-                source.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                // Воспроизводим звук
-                source.start(0);
-                
-                // Очищаем ресурсы после воспроизведения
-                source.onended = () => {
-                    source.disconnect();
-                    gainNode.disconnect();
-                };
-                
-            } catch (error) {
-                console.error(`Ошибка воспроизведения звука ${soundKey}:`, error);
-            }
-        }
-
-        // --- Функция для попытки разблокировки аудио ---
-        async function unlockAudio() {
+        function unlockAudio() {
             if (audioUnlocked) return Promise.resolve();
-            
             console.log("Попытка разблокировки аудио...");
-            
-            try {
-                // Инициализируем AudioContext и загружаем звуки
-                await initAudio();
-                
-                if (!audioContext) {
-                    throw new Error("Не удалось создать AudioContext");
-                }
-                
-                // Воспроизводим короткий тишину для разблокировки
-                const silentBuffer = audioContext.createBuffer(1, 1, 22050);
-                const source = audioContext.createBufferSource();
-                source.buffer = silentBuffer;
-                source.connect(audioContext.destination);
-                source.start(0);
-                
-                // Ждем немного и проверяем состояние
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                if (audioContext.state === 'running') {
+            const promises = [
+                backgroundMusic.play().catch(e => {
+                    console.log("Фоновая музыка: play не удался, пытаемся load", e.message);
+                    backgroundMusic.load();
+                }),
+                dotSound.play().then(() => { dotSound.pause(); dotSound.currentTime = 0; }).catch(e => {
+                    console.log("Звук точки: play/pause не удался, пытаемся load", e.message);
+                    dotSound.load();
+                }),
+                energizerSound.play().then(() => { energizerSound.pause(); energizerSound.currentTime = 0; }).catch(e => {
+                    console.log("Звук энерджайзера: play/pause не удался, пытаемся load", e.message);
+                    energizerSound.load();
+                }),
+                eatGhostSound.play().then(() => { eatGhostSound.pause(); eatGhostSound.currentTime = 0; }).catch(e => {
+                    console.log("Звук поедания призрака: play/pause не удался, пытаемся load", e.message);
+                    eatGhostSound.load();
+                }),
+                deathSound.play().then(() => { deathSound.pause(); deathSound.currentTime = 0; }).catch(e => {
+                    console.log("Звук смерти: play/pause не удался, пытаемся load", e.message);
+                    deathSound.load();
+                })
+            ];
+            return Promise.all(promises)
+                .then(() => {
                     audioUnlocked = true;
-                    console.log("Аудио успешно разблокировано через Web Audio API.");
-                    
-                    // Автоматически запускаем фоновую музыку
-                    playSoundWebAudio('background', 0.3);
+                    console.log("Аудио успешно разблокировано. Звуки должны работать.");
+                    backgroundMusic.play().catch(e => console.log("Не удалось запустить фоновую музыку после разблокировки:", e.message));
                     return true;
-                } else {
-                    throw new Error("AudioContext не перешел в состояние 'running'");
-                }
-                
-            } catch (error) {
-                console.error("Ошибка при разблокировке аудио:", error);
-                audioUnlocked = true; // Даже при ошибке считаем, что попытка была
-                return false;
-            }
+                })
+                .catch(e => {
+                    console.error("Ошибка при разблокировке аудио:", e);
+                    audioUnlocked = true; // Даже при ошибке считаем, что попытка была
+                    return false;
+                });
         }
-
-        // --- Вспомогательные функции для воспроизведения конкретных звуков ---
-        function playDotSound() {
-            playSoundWebAudio('dot', 0.5);
+        // --- Вспомогательная функция для воспроизведения звука ---
+        function playSound(sound) {
+             if (!audioUnlocked) {
+                 console.warn("Попытка воспроизвести звук до разблокировки:", sound.src || sound);
+                 return;
+             }
+             try {
+                 sound.currentTime = 0;
+                 const playPromise = sound.play();
+                 if (playPromise !== undefined) {
+                     playPromise.catch(e => console.error("Ошибка воспроизведения звука (" + (sound.src || "unknown") + "):", e));
+                 }
+             } catch (e) {
+                 console.error("Ошибка воспроизведения звука (в catch) (" + (sound.src || "unknown") + "):", e);
+             }
         }
-        
-        function playEnergizerSound() {
-            playSoundWebAudio('energizer', 0.7);
-        }
-        
-        function playEatGhostSound() {
-            playSoundWebAudio('eat_ghost', 0.8);
-        }
-        
-        function playDeathSound() {
-            playSoundWebAudio('death', 0.8);
-        }
-        
-        function playBackgroundMusic() {
-            // Фоновая музыка будет зациклена отдельно
-            playSoundWebAudio('background', 0.3);
-        }
-        // --- Конец вспомогательных функций ---
-
+        // --- Конец вспомогательной функции ---
         // Подгоняем размер под экран
         function resize() {
             const size = Math.min(window.innerWidth, window.innerHeight - 100);
@@ -258,7 +230,6 @@
         }
         resize();
         window.addEventListener('resize', resize);
-        
         // Лабиринт (1 - стена, 0 - дорога, 2 - точки, 3 - энерджайзер)
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -355,20 +326,16 @@
             actionFn();
         }
         // Управление с кнопок
-        document.getElementById('up').addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Предотвращаем двойное срабатывание
+        document.getElementById('up').addEventListener('touchstart', () => {
             handleUserAction(() => movePacman(0, -1));
         });
-        document.getElementById('down').addEventListener('touchstart', (e) => {
-            e.preventDefault();
+        document.getElementById('down').addEventListener('touchstart', () => {
             handleUserAction(() => movePacman(0, 1));
         });
-        document.getElementById('left').addEventListener('touchstart', (e) => {
-            e.preventDefault();
+        document.getElementById('left').addEventListener('touchstart', () => {
             handleUserAction(() => movePacman(-1, 0));
         });
-        document.getElementById('right').addEventListener('touchstart', (e) => {
-            e.preventDefault();
+        document.getElementById('right').addEventListener('touchstart', () => {
             handleUserAction(() => movePacman(1, 0));
         });
         // Управление с клавиатуры (для тестирования на ПК)
@@ -402,9 +369,9 @@
                     if (dot.big) {
                         scaredGhosts = true;
                         scaredTimer = 500;
-                        playEnergizerSound(); // Используем новую функцию
+                        playSound(energizerSound);
                     } else {
-                        playDotSound(); // Используем новую функцию
+                        playSound(dotSound);
                     }
                     dots.splice(i, 1);
                     break;
@@ -448,10 +415,10 @@
                         ghost.x = 9 * tileSize;
                         ghost.y = 8 * tileSize;
                         score += 200;
-                        playEatGhostSound(); // Используем новую функцию
+                        playSound(eatGhostSound);
                     } else {
                         pacman.lives--;
-                        playDeathSound(); // Используем новую функцию
+                        playSound(deathSound);
                         resetPositions();
                     }
                 }
@@ -467,19 +434,8 @@
             ghosts[1].x = 8 * tileSize; ghosts[1].y = 9 * tileSize;
             ghosts[2].x = 10 * tileSize; ghosts[2].y = 9 * tileSize;
         }
-        // --- Оптимизированный игровой цикл ---
-        let lastTime = 0;
-        const targetFPS = 60;
-        const frameInterval = 1000 / targetFPS;
-        
-        function gameLoop(currentTime) {
-            // Ограничение FPS для лучшей производительности
-            if (currentTime - lastTime < frameInterval) {
-                requestAnimationFrame(gameLoop);
-                return;
-            }
-            lastTime = currentTime;
-            
+        // Главный игровой цикл
+        function gameLoop() {
             update();
             draw();
             requestAnimationFrame(gameLoop);
@@ -511,7 +467,6 @@
             }
         }
         function draw() {
-            // Очищаем canvas более эффективно
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             // Рисование лабиринта
@@ -526,52 +481,71 @@
                 }
             }
             // Рисование точек
+            // ctx.fillStyle = 'white'; // Закомментировано, так как рисуем изображения
             for (const dot of dots) {
-                const dotSize = dot.big ? 12 : 6;
+                // ctx.beginPath(); // Закомментировано, так как рисуем изображения
+                // ctx.arc(dot.x, dot.y, dot.big ? 6 : 3, 0, Math.PI * 2); // Закомментировано, так как рисуем изображения
+                // ctx.fill(); // Закомментировано, так как рисуем изображения
+                // --- Новое отображение точек с помощью изображений ---
+                const dotSize = dot.big ? 12 : 6; // Примерный размер из оригинального кода * 2
                 const useImage = dot.big ? energizerImage : dotImage;
-
                 if (useImage.complete && useImage.naturalWidth !== 0) {
+                    // Рисуем изображение точки или энерджайзера
                     ctx.drawImage(
                         useImage,
-                        dot.x - dotSize / 2,
-                        dot.y - dotSize / 2,
-                        dotSize,
-                        dotSize
+                        dot.x - dotSize / 2, // x координата на холсте (левый верхний угол)
+                        dot.y - dotSize / 2, // y координата на холсте (левый верхний угол)
+                        dotSize,             // ширина на холсте
+                        dotSize              // высота на холсте
                     );
                 } else {
+                    // Резервный вариант: если изображение не загрузилось, рисуем белый круг
+                    console.warn(`Изображение ${dot.big ? 'энерджайзера' : 'точки'} не загружено. Используется резервный вариант.`);
                     ctx.fillStyle = 'white';
                     ctx.beginPath();
                     ctx.arc(dot.x, dot.y, dot.big ? 6 : 3, 0, Math.PI * 2);
                     ctx.fill();
                 }
+                // --- Конец нового отображения точек ---
             }
-            // Рисование Пакмана из изображения
-            let usePacmanImage = pacmanImage;
+            // --- Рисование Пакмана из изображения ---
+            // Определяем, какое изображение использовать для основного Пакмана
+            let usePacmanImage = pacmanImage; // По умолчанию обычное изображение
             if (scaredGhosts) {
+                // Если призраки испуганы, используем изображение испуганного Пакмана
                 usePacmanImage = pacmanScaredImage;
             }
-
             if (usePacmanImage.complete && usePacmanImage.naturalWidth !== 0) {
+                // Рисуем выбранное изображение Пакмана
                 ctx.drawImage(usePacmanImage, pacman.x - pacman.radius, pacman.y - pacman.radius, pacman.radius * 2, pacman.radius * 2);
             } else {
+                 // Резервный вариант: рисуем желтый круг
+                 console.warn(`Изображение Пакмана (${usePacmanImage.src}) не загружено. Используется резервный вариант.`);
                  ctx.fillStyle = 'yellow';
                  ctx.beginPath();
                  ctx.arc(pacman.x, pacman.y, pacman.radius, 0, Math.PI * 2);
                  ctx.fill();
             }
+            // --- Конец рисования Пакмана ---
             // Рисование призраков из изображений
             ghosts.forEach(ghost => {
+                // Определяем, какое изображение использовать
                 let useImageKey;
                 if (scaredGhosts) {
+                    // Используем уникальное изображение для испуганного состояния
                     useImageKey = ghost.imageKey + '_scared';
                 } else {
+                    // Используем обычное изображение
                     useImageKey = ghost.imageKey;
                 }
                 const useImage = ghostImages[useImageKey];
                 if (useImage && useImage.complete && useImage.naturalWidth !== 0) {
+                    // Рисуем изображение призрака
                     ctx.drawImage(useImage, ghost.x - ghost.radius, ghost.y - ghost.radius, ghost.radius * 2, ghost.radius * 2);
                 } else {
-                    ctx.fillStyle = scaredGhosts ? '#0000FF' : ghost.color;
+                    // Резервный вариант: рисуем цветной круг
+                    console.warn(`Изображение для призрака ${useImageKey} не загружено. Используется резервный вариант.`);
+                    ctx.fillStyle = scaredGhosts ? '#0000FF' : ghost.color; // Синий для испуганного, иначе цвет призрака
                     ctx.beginPath();
                     ctx.arc(ghost.x, ghost.y - 5, ghost.radius, Math.PI, 0, false);
                     ctx.lineTo(ghost.x + ghost.radius, ghost.y + ghost.radius - 5);
@@ -581,6 +555,7 @@
                     ctx.lineTo(ghost.x - ghost.radius, ghost.y + ghost.radius - 5);
                     ctx.closePath();
                     ctx.fill();
+                    // Рисуем глаза резервного призрака
                     ctx.fillStyle = 'white';
                     ctx.beginPath();
                     ctx.arc(ghost.x - 5, ghost.y - 8, 4, 0, Math.PI * 2);
@@ -597,21 +572,24 @@
             ctx.fillStyle = 'white';
             ctx.font = '20px Arial';
             ctx.fillText('Счёт: ' + score, 10, 30);
-
+            // --- Рисование жизней (иконок здоровья) ---
             for (let i = 0; i < pacman.lives; i++) {
-                const lifeX = 10 + i * 25;
-                const lifeY = 50;
-                const lifeSize = 20;
-
+                const lifeX = 10 + i * 25; // Позиция X для каждой иконки жизни
+                const lifeY = 50;          // Позиция Y для иконок жизни
+                const lifeSize = 20;       // Размер иконки жизни (диаметр)
+                // Проверяем, загружено ли изображение иконки здоровья
                 if (pacmanHealthImage.complete && pacmanHealthImage.naturalWidth !== 0) {
+                    // Рисуем изображение иконки здоровья
                     ctx.drawImage(
                         pacmanHealthImage,
-                        lifeX - lifeSize / 2,
-                        lifeY - lifeSize / 2,
-                        lifeSize,
-                        lifeSize
+                        lifeX - lifeSize / 2, // x координата на холсте (левый верхний угол)
+                        lifeY - lifeSize / 2, // y координата на холсте (левый верхний угол)
+                        lifeSize,             // ширина на холсте
+                        lifeSize              // высота на холсте
                     );
                 } else {
+                    // Резервный вариант: если изображение не загрузилось, рисуем желтый круг
+                    console.warn("Изображение иконки здоровья (mypacman_health.png) не загружено. Используется резервный вариант.");
                     ctx.fillStyle = 'yellow';
                     ctx.beginPath();
                     ctx.arc(lifeX, lifeY, lifeSize / 2, 0.2, Math.PI * 2 - 0.2);
@@ -619,8 +597,8 @@
                     ctx.fill();
                 }
             }
+            // --- Конец рисования жизней ---
         }
-
         // Обработчики загрузки для изображений призраков
         Object.keys(ghostImages).forEach(key => {
             const img = ghostImages[key];
@@ -631,30 +609,27 @@
                 console.error(`Ошибка загрузки изображения ${key}.png.`);
             };
         });
-
-        // Обработчики загрузки для изображений Пакмана
+        // --- Обработчики загрузки для изображений Пакмана ---
         pacmanImage.onload = function() {
             console.log("Изображение Пакмана (mypacman.png) загружено.");
         };
         pacmanImage.onerror = function() {
             console.error("Ошибка загрузки изображения mypacman.png.");
         };
-
         pacmanScaredImage.onload = function() {
             console.log("Изображение испуганного Пакмана (mypacman_scared.png) загружено.");
         };
         pacmanScaredImage.onerror = function() {
             console.error("Ошибка загрузки изображения mypacman_scared.png.");
         };
-
         pacmanHealthImage.onload = function() {
             console.log("Изображение иконки здоровья Пакмана (mypacman_health.png) загружено.");
         };
         pacmanHealthImage.onerror = function() {
             console.error("Ошибка загрузки изображения mypacman_health.png.");
         };
-
-        // Обработчики загрузки для изображений точек
+        // --- Конец обработчиков загрузки для изображений Пакмана ---
+        // --- Обработчики загрузки для изображений точек ---
         dotImage.onload = function() {
             console.log("Изображение точки (dot.png) загружено.");
         };
@@ -667,12 +642,13 @@
         energizerImage.onerror = function() {
             console.error("Ошибка загрузки изображения energizer.png.");
         };
-
-        // Обработка стартовой кнопки
+        // --- Конец обработчиков загрузки для точек ---
+        // --- Обработка стартовой кнопки ---
         document.getElementById('startButton').addEventListener('click', async function() {
-            console.log("Нажата кнопка 'Включить звук и Играть'");
+            console.log("Нажата кнопка 'Начать'");
+            // Скрываем стартовый экран
             document.getElementById('startScreen').style.display = 'none';
-
+            // Пытаемся разблокировать аудио
             if (!audioUnlocked) {
                 try {
                     await unlockAudio();
@@ -683,9 +659,23 @@
             } else {
                 console.log("Аудио уже было разблокировано ранее.");
             }
+            // Принудительно запускаем фоновую музыку, если она еще не играет
+            // и если аудио было разблокировано
+            if (audioUnlocked) {
+                 if (backgroundMusic.paused) {
+                     console.log("Принудительный запуск фоновой музыки...");
+                     playSound(backgroundMusic); // Используем вашу оберточную функцию
+                     // Альтернатива напрямую: backgroundMusic.play().catch(e => console.log("Не удалось принудительно запустить фоновую музыку:", e.message));
+                 } else {
+                     console.log("Фоновая музыка уже играет.");
+                 }
+            } else {
+                console.warn("Аудио не разблокировано, фоновая музыка не будет запущена.");
+            }
         });
-
-        // Запускаем игровой цикл с ограничением FPS
+        // --- Конец обработки стартовой кнопки ---
+        // Запускаем игровой цикл независимо от загрузки изображений
+        // Игра начинается, но звуки будут работать только после нажатия кнопки
         gameLoop();
     </script>
 </body>
