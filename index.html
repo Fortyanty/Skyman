@@ -578,32 +578,35 @@
                     ctx.fill();
                 }
             });
-            // Рисование счёта и жизней
-            ctx.fillStyle = 'white';
-            ctx.font = '20px Arial';
-            ctx.fillText('Счёт: ' + score, 10, 30);
-            // --- Рисование жизней (иконок здоровья) ---
+
+                  // --- Рисование жизней (иконок здоровья) в правом верхнем углу ---
+            const lifeSize = 20; // Размер иконки жизни (диаметр)
+            const lifePadding = 10; // Отступ от края экрана
+            const lifeSpacing = 5;  // Расстояние между иконками
+
             for (let i = 0; i < pacman.lives; i++) {
-                const lifeX = 10 + i * 25; // Позиция X для каждой иконки жизни
-                const lifeY = 50;          // Позиция Y для иконок жизни
-                const lifeSize = 20;       // Размер иконки жизни (диаметр)
+                // Рассчитываем позицию X для каждой иконки (начиная справа)
+                const lifeX = canvas.width - lifePadding - lifeSize - i * (lifeSize + lifeSpacing);
+                // Позиция Y для отображения в верхней части экрана
+                const lifeY = lifePadding + lifeSize / 2;
+
                 // Проверяем, загружено ли изображение иконки здоровья
                 if (pacmanHealthImage.complete && pacmanHealthImage.naturalWidth !== 0) {
                     // Рисуем изображение иконки здоровья
                     ctx.drawImage(
                         pacmanHealthImage,
-                        lifeX - lifeSize / 2, // x координата на холсте (левый верхний угол)
-                        lifeY - lifeSize / 2, // y координата на холсте (левый верхний угол)
-                        lifeSize,             // ширина на холсте
-                        lifeSize              // высота на холсте
+                        lifeX,               // x координата на холсте (левый верхний угол)
+                        lifeY - lifeSize/2,  // y координата на холсте (левый верхний угол)
+                        lifeSize,            // ширина на холсте
+                        lifeSize             // высота на холсте
                     );
                 } else {
                     // Резервный вариант: если изображение не загрузилось, рисуем желтый круг
                     console.warn("Изображение иконки здоровья (mypacman_health.png) не загружено. Используется резервный вариант.");
                     ctx.fillStyle = 'yellow';
                     ctx.beginPath();
-                    ctx.arc(lifeX, lifeY, lifeSize / 2, 0.2, Math.PI * 2 - 0.2);
-                    ctx.lineTo(lifeX, lifeY);
+                    ctx.arc(lifeX + lifeSize/2, lifeY, lifeSize / 2, 0.2, Math.PI * 2 - 0.2);
+                    ctx.lineTo(lifeX + lifeSize/2, lifeY);
                     ctx.fill();
                 }
             }
