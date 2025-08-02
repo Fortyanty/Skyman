@@ -447,14 +447,12 @@
             collectDots();
             updateGhosts();
             if (pacman.lives <= 0) {
-                alert('Игра окончена! Счёт: ' + score);
                 pacman.lives = 3;
                 score = 0;
                 initDots();
                 resetPositions();
             }
             if (dots.length === 0) {
-                alert('Победа! Счёт: ' + score);
                 score = 0;
                 initDots();
                 resetPositions();
