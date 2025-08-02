@@ -464,20 +464,28 @@
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             // Рисование лабиринта
-                       // --- Начало изменения: Переливающийся лабиринт ---
-            // Получаем текущее время для анимации цвета
-            const time = Date.now() * 0.001; // Время в секундах
-            // Вычисляем компоненты цвета RGB с использованием синусоиды
-            // Math.sin возвращает значение от -1 до 1, поэтому нормализуем его до 0-255
-            const r = Math.floor(Math.sin(time) * 127 + 128);
-            const g = Math.floor(Math.sin(time * 1.1 + 2) * 127 + 128); // немного сдвинутая фаза
-            const b = Math.floor(Math.sin(time * 1.2 + 4) * 127 + 128); // еще больше сдвинутая фаза
-            // Устанавливаем цвет заливки для стен лабиринта
-            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-            // Рисуем стены лабиринта
+            const time = Date.now() * 0.001; // Время в секундах для анимации
+
             for (let y = 0; y < maze.length; y++) {
                 for (let x = 0; x < maze[y].length; x++) {
                     if (maze[y][x] === 1) {
+                        // Создаем волновой эффект, зависящий от положения и времени
+                        // Используем разные фазы для x и y, чтобы создать диагональные волны
+                        const waveX = Math.sin(x * 0.5 + time) * 0.5 + 0.5; // Значение от 0 до 1
+                        const waveY = Math.cos(y * 0.3 + time * 1.2) * 0.5 + 0.5; // Значение от 0 до 1
+                        const waveTime = Math.sin(time * 0.7) * 0.5 + 0.5; // Глобальная временная волна
+
+                        // Комбинируем волны для получения изменяющегося значения от 0 до 1
+                        const combinedWave = (waveX + waveY + waveTime) / 3;
+
+                        // Преобразуем combinedWave (0-1) в компоненты RGB
+                        // Это создаст плавный переход между цветами
+                        const r = Math.floor(Math.sin(combinedWave * Math.PI * 2 + 0) * 127 + 128);
+                        const g = Math.floor(Math.sin(combinedWave * Math.PI * 2 + 2) * 127 + 128);
+                        const b = Math.floor(Math.sin(combinedWave * Math.PI * 2 + 4) * 127 + 128);
+
+                        // Устанавливаем цвет для конкретной плитки стены
+                        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                         ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
                     }
                 }
