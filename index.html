@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -14,20 +13,29 @@
             touch-action: manipulation;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
+            /* Добавлены оптимизации для мобильных */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         #game {
             display: block;
             margin: 0 auto;
             background: #000;
+            /* Оптимизация рендеринга для мобильных */
+            -webkit-transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            -webkit-perspective: 1000;
         }
         #controls {
             position: fixed;
             bottom: 20px;
             width: 100%;
             text-align: center;
+            /* Оптимизация композитинга */
+            -webkit-transform: translateZ(0);
+            will-change: transform;
         }
         .btn {
-            /* Увеличение кнопок */
             width: 80px;
             height: 80px;
             margin: 10px;
@@ -37,14 +45,74 @@
             justify-content: center;
             align-items: center;
             color: white;
-            font-size: 32px; /* Увеличение шрифта стрелок */
+            font-size: 32px;
             user-select: none;
-            /* Добавление тени для лучшей видимости */
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            /* Оптимизации для сенсорных кнопок */
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -webkit-transform: translateZ(0);
+            will-change: transform;
         }
+        /* --- Стили для стартового экрана --- */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            flex-direction: column;
+            /* Оптимизации для стартового экрана */
+            -webkit-transform: translateZ(0);
+            will-change: transform;
+        }
+        #startButton {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: yellow;
+            color: black;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            /* Оптимизации для кнопки */
+            -webkit-appearance: none;
+            -webkit-transform: translateZ(0);
+            will-change: transform;
+        }
+        #startButton:hover {
+             background: #ffcc00;
+        }
+        #startScreen h1 {
+            color: yellow;
+            font-family: Arial, sans-serif;
+            margin-bottom: 20px;
+        }
+        #startScreen p {
+            color: white;
+            font-family: Arial, sans-serif;
+            margin-top: 20px;
+            text-align: center;
+            padding: 0 20px;
+        }
+        /* --- Конец стилей для стартового экрана --- */
     </style>
 </head>
 <body>
+    <!-- --- Стартовый экран --- -->
+    <div id="startScreen">
+        <h1>PACMAN</h1>
+        <button id="startButton">Включить звук и Играть</button>
+        <p>Нажмите кнопку выше, чтобы включить звук<br>и начать игру</p>
+    </div>
+    <!-- --- Конец стартового экрана --- -->
+
     <canvas id="game"></canvas>
     <div id="controls">
         <div class="btn" id="up">↑</div><br>
@@ -55,10 +123,11 @@
     <script>
         // Настройки игры
         const canvas = document.getElementById('game');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Отключаем альфа-канал для лучшей производительности
         const tileSize = 20;
         const pacmanSpeed = 3;
         const ghostSpeed = 2;
+        
         // --- Инициализация всех аудио ---
         const backgroundMusic = new Audio('background.mp3');
         backgroundMusic.loop = true;
@@ -71,6 +140,7 @@
         eatGhostSound.volume = 0.8;
         const deathSound = new Audio('death.mp3');
         deathSound.volume = 0.8;
+        
         // --- Конец инициализации аудио ---
         // --- Функция для попытки начальной инициализации ВСЕХ звуков ---
         let audioUnlocked = false;
@@ -112,22 +182,24 @@
                     return false;
                 });
         }
+        
         // --- Вспомогательная функция для воспроизведения звука ---
         function playSound(sound) {
              if (!audioUnlocked) {
-                 console.warn("Попытка воспроизвести звук до разблокировки:", sound);
+                 console.warn("Попытка воспроизвести звук до разблокировки:", sound.src || sound);
                  return;
              }
              try {
                  sound.currentTime = 0;
                  const playPromise = sound.play();
                  if (playPromise !== undefined) {
-                     playPromise.catch(e => console.error("Ошибка воспроизведения звука:", e));
+                     playPromise.catch(e => console.error("Ошибка воспроизведения звука (" + (sound.src || "unknown") + "):", e));
                  }
              } catch (e) {
-                 console.error("Ошибка воспроизведения звука (в catch):", e);
+                 console.error("Ошибка воспроизведения звука (в catch) (" + (sound.src || "unknown") + "):", e);
              }
         }
+        
         // --- Конец вспомогательной функции ---
         // Подгоняем размер под экран
         function resize() {
@@ -139,14 +211,7 @@
         }
         resize();
         window.addEventListener('resize', resize);
-
-        // --- Создаем объекты Image для спрайтов точек ---
-        const dotImage = new Image();
-        dotImage.src = 'dot.png';
-        const energizerImage = new Image();
-        energizerImage.src = 'energizer.png';
-        // --- Конец создания объектов Image для точек ---
-
+        
         // Лабиринт (1 - стена, 0 - дорога, 2 - точки, 3 - энерджайзер)
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -172,6 +237,7 @@
             [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
+        
         // Игровые объекты
         let pacman = {
             x: 9 * tileSize,
@@ -181,15 +247,21 @@
             radius: tileSize / 2,
             lives: 3
         };
-
+        
+        // Создаем объекты Image для спрайтов точек
+        const dotImage = new Image();
+        dotImage.src = 'dot.png';
+        const energizerImage = new Image();
+        energizerImage.src = 'energizer.png';
+        
         // Создаем объекты Image для Пакмана
         const pacmanImage = new Image();
         pacmanImage.src = 'mypacman.png';
-        const pacmanScaredImage = new Image(); // Новое изображение для испуганного Пакмана
+        const pacmanScaredImage = new Image();
         pacmanScaredImage.src = 'mypacman_scared.png';
-        const pacmanHealthImage = new Image(); // Новое изображение для иконки здоровья
+        const pacmanHealthImage = new Image();
         pacmanHealthImage.src = 'mypacman_health.png';
-
+        
         // Создаем объекты Image для призраков
         const ghostImages = {
             // Нормальные состояния
@@ -201,6 +273,7 @@
             cyan_scared: new Image(),
             orange_scared: new Image()
         };
+        
         // Загружаем изображения
         ghostImages.red.src = 'ghost_red.png';
         ghostImages.cyan.src = 'ghost_cyan.png';
@@ -208,30 +281,34 @@
         ghostImages.red_scared.src = 'ghost_red_scared.png';
         ghostImages.cyan_scared.src = 'ghost_cyan_scared.png';
         ghostImages.orange_scared.src = 'ghost_orange_scared.png';
+        
         // Убрали pink призрака, теперь их 3
         let ghosts = [
             { x: 9 * tileSize, y: 8 * tileSize, dx: ghostSpeed, dy: 0, color: 'red', radius: tileSize / 2, imageKey: 'red' },
             { x: 8 * tileSize, y: 9 * tileSize, dx: 0, dy: ghostSpeed, color: 'cyan', radius: tileSize / 2, imageKey: 'cyan' },
             { x: 10 * tileSize, y: 9 * tileSize, dx: 0, dy: -ghostSpeed, color: 'orange', radius: tileSize / 2, imageKey: 'orange' }
         ];
+        
         let dots = [];
         let score = 0;
         let scaredGhosts = false;
         let scaredTimer = 0;
+        
         // Инициализация точек
         function initDots() {
             dots = [];
             for (let y = 0; y < maze.length; y++) {
                 for (let x = 0; x < maze[y].length; x++) {
                     if (maze[y][x] === 2) {
-                        dots.push({x: x * tileSize + tileSize/2, y: y * tileSize + tileSize/2, big: false}); // Уточняем, что это маленькая точка
+                        dots.push({x: x * tileSize + tileSize/2, y: y * tileSize + tileSize/2, big: false});
                     } else if (maze[y][x] === 3) {
-                        dots.push({x: x * tileSize + tileSize/2, y: y * tileSize + tileSize/2, big: true}); // Уточняем, что это большая точка
+                        dots.push({x: x * tileSize + tileSize/2, y: y * tileSize + tileSize/2, big: true});
                     }
                 }
             }
         }
         initDots();
+        
         // --- Обработчики управления с вызовом unlockAudio ---
         async function handleUserAction(actionFn) {
             if (!audioUnlocked) {
@@ -239,19 +316,25 @@
             }
             actionFn();
         }
+        
         // Управление с кнопок
-        document.getElementById('up').addEventListener('touchstart', () => {
+        document.getElementById('up').addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Предотвращаем двойное срабатывание
             handleUserAction(() => movePacman(0, -1));
         });
-        document.getElementById('down').addEventListener('touchstart', () => {
+        document.getElementById('down').addEventListener('touchstart', (e) => {
+            e.preventDefault();
             handleUserAction(() => movePacman(0, 1));
         });
-        document.getElementById('left').addEventListener('touchstart', () => {
+        document.getElementById('left').addEventListener('touchstart', (e) => {
+            e.preventDefault();
             handleUserAction(() => movePacman(-1, 0));
         });
-        document.getElementById('right').addEventListener('touchstart', () => {
+        document.getElementById('right').addEventListener('touchstart', (e) => {
+            e.preventDefault();
             handleUserAction(() => movePacman(1, 0));
         });
+        
         // Управление с клавиатуры (для тестирования на ПК)
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp') handleUserAction(() => movePacman(0, -1));
@@ -259,11 +342,13 @@
             if (e.key === 'ArrowLeft') handleUserAction(() => movePacman(-1, 0));
             if (e.key === 'ArrowRight') handleUserAction(() => movePacman(1, 0));
         });
+        
         // --- Конец обработчиков ---
         function movePacman(dx, dy) {
             pacman.dx = dx * pacmanSpeed;
             pacman.dy = dy * pacmanSpeed;
         }
+        
         // Проверка столкновений со стенами
         function checkCollision(x, y) {
             const tileX = Math.floor(x / tileSize);
@@ -273,6 +358,7 @@
             }
             return maze[tileY][tileX] === 1;
         }
+        
         // Сбор точек
         function collectDots() {
             for (let i = 0; i < dots.length; i++) {
@@ -292,6 +378,7 @@
                 }
             }
         }
+        
         // Телепортация через туннели
         function checkTunnels(obj) {
             if (obj.x < -obj.radius) {
@@ -300,6 +387,7 @@
                 obj.x = -obj.radius;
             }
         }
+        
         // ИИ призраков
         function updateGhosts() {
             if (scaredTimer > 0) {
@@ -338,6 +426,7 @@
                 }
             });
         }
+        
         function resetPositions() {
             pacman.x = 9 * tileSize;
             pacman.y = 15 * tileSize;
@@ -348,12 +437,25 @@
             ghosts[1].x = 8 * tileSize; ghosts[1].y = 9 * tileSize;
             ghosts[2].x = 10 * tileSize; ghosts[2].y = 9 * tileSize;
         }
-        // Главный игровой цикл
-        function gameLoop() {
+        
+        // --- Оптимизированный игровой цикл ---
+        let lastTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS;
+        
+        function gameLoop(currentTime) {
+            // Ограничение FPS для лучшей производительности
+            if (currentTime - lastTime < frameInterval) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+            lastTime = currentTime;
+            
             update();
             draw();
             requestAnimationFrame(gameLoop);
         }
+        
         function update() {
             const newX = pacman.x + pacman.dx;
             const newY = pacman.y + pacman.dy;
@@ -380,9 +482,12 @@
                 resetPositions();
             }
         }
+        
         function draw() {
+            // Очищаем canvas более эффективно
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             // Рисование лабиринта
             ctx.strokeStyle = 'blue';
             ctx.lineWidth = 2;
@@ -394,76 +499,56 @@
                     }
                 }
             }
+            
             // Рисование точек
-            // ctx.fillStyle = 'white'; // Закомментировано, так как рисуем изображения
             for (const dot of dots) {
-                // ctx.beginPath(); // Закомментировано, так как рисуем изображения
-                // ctx.arc(dot.x, dot.y, dot.big ? 6 : 3, 0, Math.PI * 2); // Закомментировано, так как рисуем изображения
-                // ctx.fill(); // Закомментировано, так как рисуем изображения
-
-                // --- Новое отображение точек с помощью изображений ---
-                const dotSize = dot.big ? 12 : 6; // Примерный размер из оригинального кода * 2
+                const dotSize = dot.big ? 12 : 6;
                 const useImage = dot.big ? energizerImage : dotImage;
 
                 if (useImage.complete && useImage.naturalWidth !== 0) {
-                    // Рисуем изображение точки или энерджайзера
                     ctx.drawImage(
                         useImage,
-                        dot.x - dotSize / 2, // x координата на холсте (левый верхний угол)
-                        dot.y - dotSize / 2, // y координата на холсте (левый верхний угол)
-                        dotSize,             // ширина на холсте
-                        dotSize              // высота на холсте
+                        dot.x - dotSize / 2,
+                        dot.y - dotSize / 2,
+                        dotSize,
+                        dotSize
                     );
                 } else {
-                    // Резервный вариант: если изображение не загрузилось, рисуем белый круг
-                    console.warn(`Изображение ${dot.big ? 'энерджайзера' : 'точки'} не загружено. Используется резервный вариант.`);
                     ctx.fillStyle = 'white';
                     ctx.beginPath();
                     ctx.arc(dot.x, dot.y, dot.big ? 6 : 3, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                // --- Конец нового отображения точек ---
             }
-            // --- Рисование Пакмана из изображения ---
-            // Определяем, какое изображение использовать для основного Пакмана
-            let usePacmanImage = pacmanImage; // По умолчанию обычное изображение
+            
+            // Рисование Пакмана из изображения
+            let usePacmanImage = pacmanImage;
             if (scaredGhosts) {
-                // Если призраки испуганы, используем изображение испуганного Пакмана
                 usePacmanImage = pacmanScaredImage;
             }
 
             if (usePacmanImage.complete && usePacmanImage.naturalWidth !== 0) {
-                // Рисуем выбранное изображение Пакмана
                 ctx.drawImage(usePacmanImage, pacman.x - pacman.radius, pacman.y - pacman.radius, pacman.radius * 2, pacman.radius * 2);
             } else {
-                 // Резервный вариант: рисуем желтый круг
-                 console.warn(`Изображение Пакмана (${usePacmanImage.src}) не загружено. Используется резервный вариант.`);
                  ctx.fillStyle = 'yellow';
                  ctx.beginPath();
                  ctx.arc(pacman.x, pacman.y, pacman.radius, 0, Math.PI * 2);
                  ctx.fill();
             }
-            // --- Конец рисования Пакмана ---
-
+            
             // Рисование призраков из изображений
             ghosts.forEach(ghost => {
-                // Определяем, какое изображение использовать
                 let useImageKey;
                 if (scaredGhosts) {
-                    // Используем уникальное изображение для испуганного состояния
                     useImageKey = ghost.imageKey + '_scared';
                 } else {
-                    // Используем обычное изображение
                     useImageKey = ghost.imageKey;
                 }
                 const useImage = ghostImages[useImageKey];
                 if (useImage && useImage.complete && useImage.naturalWidth !== 0) {
-                    // Рисуем изображение призрака
                     ctx.drawImage(useImage, ghost.x - ghost.radius, ghost.y - ghost.radius, ghost.radius * 2, ghost.radius * 2);
                 } else {
-                    // Резервный вариант: рисуем цветной круг
-                    console.warn(`Изображение для призрака ${useImageKey} не загружено. Используется резервный вариант.`);
-                    ctx.fillStyle = scaredGhosts ? '#0000FF' : ghost.color; // Синий для испуганного, иначе цвет призрака
+                    ctx.fillStyle = scaredGhosts ? '#0000FF' : ghost.color;
                     ctx.beginPath();
                     ctx.arc(ghost.x, ghost.y - 5, ghost.radius, Math.PI, 0, false);
                     ctx.lineTo(ghost.x + ghost.radius, ghost.y + ghost.radius - 5);
@@ -473,7 +558,6 @@
                     ctx.lineTo(ghost.x - ghost.radius, ghost.y + ghost.radius - 5);
                     ctx.closePath();
                     ctx.fill();
-                    // Рисуем глаза резервного призрака
                     ctx.fillStyle = 'white';
                     ctx.beginPath();
                     ctx.arc(ghost.x - 5, ghost.y - 8, 4, 0, Math.PI * 2);
@@ -486,30 +570,26 @@
                     ctx.fill();
                 }
             });
+            
             // Рисование счёта и жизней
             ctx.fillStyle = 'white';
             ctx.font = '20px Arial';
-            ctx.fillText(+ score, 10, 30);
-            
-            // --- Рисование жизней (иконок здоровья) ---
-            for (let i = 0; i < pacman.lives; i++) {
-                const lifeX = 10 + i * 25; // Позиция X для каждой иконки жизни
-                const lifeY = 50;          // Позиция Y для иконок жизни
-                const lifeSize = 20;       // Размер иконки жизни (диаметр)
+            ctx.fillText('Счёт: ' + score, 10, 30);
 
-                // Проверяем, загружено ли изображение иконки здоровья
+            for (let i = 0; i < pacman.lives; i++) {
+                const lifeX = 10 + i * 25;
+                const lifeY = 50;
+                const lifeSize = 20;
+
                 if (pacmanHealthImage.complete && pacmanHealthImage.naturalWidth !== 0) {
-                    // Рисуем изображение иконки здоровья
                     ctx.drawImage(
                         pacmanHealthImage,
-                        lifeX - lifeSize / 2, // x координата на холсте (левый верхний угол)
-                        lifeY - lifeSize / 2, // y координата на холсте (левый верхний угол)
-                        lifeSize,             // ширина на холсте
-                        lifeSize              // высота на холсте
+                        lifeX - lifeSize / 2,
+                        lifeY - lifeSize / 2,
+                        lifeSize,
+                        lifeSize
                     );
                 } else {
-                    // Резервный вариант: если изображение не загрузилось, рисуем желтый круг
-                    console.warn("Изображение иконки здоровья (mypacman_health.png) не загружено. Используется резервный вариант.");
                     ctx.fillStyle = 'yellow';
                     ctx.beginPath();
                     ctx.arc(lifeX, lifeY, lifeSize / 2, 0.2, Math.PI * 2 - 0.2);
@@ -517,9 +597,8 @@
                     ctx.fill();
                 }
             }
-            // --- Конец рисования жизней ---
         }
-        
+
         // Обработчики загрузки для изображений призраков
         Object.keys(ghostImages).forEach(key => {
             const img = ghostImages[key];
@@ -530,31 +609,30 @@
                 console.error(`Ошибка загрузки изображения ${key}.png.`);
             };
         });
-        
-        // --- Обработчики загрузки для изображений Пакмана ---
+
+        // Обработчики загрузки для изображений Пакмана
         pacmanImage.onload = function() {
             console.log("Изображение Пакмана (mypacman.png) загружено.");
         };
         pacmanImage.onerror = function() {
             console.error("Ошибка загрузки изображения mypacman.png.");
         };
-        
+
         pacmanScaredImage.onload = function() {
             console.log("Изображение испуганного Пакмана (mypacman_scared.png) загружено.");
         };
         pacmanScaredImage.onerror = function() {
             console.error("Ошибка загрузки изображения mypacman_scared.png.");
         };
-        
+
         pacmanHealthImage.onload = function() {
             console.log("Изображение иконки здоровья Пакмана (mypacman_health.png) загружено.");
         };
         pacmanHealthImage.onerror = function() {
             console.error("Ошибка загрузки изображения mypacman_health.png.");
         };
-        // --- Конец обработчиков загрузки для изображений Пакмана ---
 
-        // --- Обработчики загрузки для изображений точек ---
+        // Обработчики загрузки для изображений точек
         dotImage.onload = function() {
             console.log("Изображение точки (dot.png) загружено.");
         };
@@ -567,9 +645,36 @@
         energizerImage.onerror = function() {
             console.error("Ошибка загрузки изображения energizer.png.");
         };
-        // --- Конец обработчиков загрузки для точек ---
 
-        // Запускаем игровой цикл независимо от загрузки изображений
+        // Обработка стартовой кнопки
+        document.getElementById('startButton').addEventListener('click', async function() {
+            console.log("Нажата кнопка 'Включить звук и Играть'");
+            document.getElementById('startScreen').style.display = 'none';
+
+            if (!audioUnlocked) {
+                try {
+                    await unlockAudio();
+                    console.log("Аудио разблокировано по кнопке.");
+                } catch (e) {
+                    console.error("Ошибка при разблокировке аудио по кнопке:", e);
+                }
+            } else {
+                console.log("Аудио уже было разблокировано ранее.");
+            }
+
+            if (audioUnlocked) {
+                 if (backgroundMusic.paused) {
+                     console.log("Принудительный запуск фоновой музыки...");
+                     playSound(backgroundMusic);
+                 } else {
+                     console.log("Фоновая музыка уже играет.");
+                 }
+            } else {
+                console.warn("Аудио не разблокировано, фоновая музыка не будет запущена.");
+            }
+        });
+
+        // Запускаем игровой цикл с ограничением FPS
         gameLoop();
     </script>
 </body>
