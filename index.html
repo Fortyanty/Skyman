@@ -127,7 +127,7 @@
             <div class="character-img ghost-orange-char" style="display:none;"></div>
         </div>
 
-        <button id="startButton">Начать</button>
+        <button id="startButton">Go!</button>
     </div>
     <!-- --- Конец стартового экрана --- -->
     <canvas id="game"></canvas>
@@ -658,7 +658,7 @@
         // --- Конец обработчиков загрузки для точек ---
         // --- Обработка стартовой кнопки ---
         document.getElementById('startButton').addEventListener('click', async function() {
-            console.log("Нажата кнопка 'Начать'");
+            console.log("Нажата кнопка 'Go!'");
             // Скрываем стартовый экран
             document.getElementById('startScreen').style.display = 'none';
             // Пытаемся разблокировать аудио
