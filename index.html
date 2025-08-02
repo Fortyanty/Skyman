@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pacman для iPhone</title>
+    <title>Skyman</title>
     <style>
         body {
             margin: 0;
@@ -447,12 +447,14 @@
             collectDots();
             updateGhosts();
             if (pacman.lives <= 0) {
+                alert('Игра окончена! Счёт: ' + score);
                 pacman.lives = 3;
                 score = 0;
                 initDots();
                 resetPositions();
             }
             if (dots.length === 0) {
+                alert('Победа! Счёт: ' + score);
                 score = 0;
                 initDots();
                 resetPositions();
